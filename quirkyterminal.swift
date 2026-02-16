@@ -128,7 +128,7 @@ struct EnvironmentModule: SystemModule {
 
 // MARK: - 3. Presentation Layer
 
-class Renderer {
+final class Renderer {
     private let modules: [SystemModule]
     private let asciiArt: String
     
@@ -146,7 +146,9 @@ class Renderer {
             for item in items {
                 if item.key == "Header" {
                     linesToPrint.append("\(Style.bold.rawValue)\(item.value)\(Style.reset.rawValue)")
-                    linesToPrint.append(String(repeating: "-", count: item.value.count - 10)) // rough adj for color codes
+                    // Fixed the magic number for the underline using the raw string count
+                    let rawHeader = item.value.replacingOccurrences(of: "\u{001B}\\[[0-9;]*m", with: "", options: .regularExpression)
+                    linesToPrint.append(String(repeating: "-", count: rawHeader.count))
                 } else {
                     let key = Style.colorize("\(item.key):", with: .cyan)
                     linesToPrint.append("\(key) \(item.value)")
@@ -162,8 +164,11 @@ class Renderer {
         linesToPrint.append(palette)
 
         // 2. Align with Logo
-        let logoLines = asciiArt.split(separator: "\n").map(String.init)
+        let logoLines = asciiArt.components(separatedBy: .newlines)
         let maxLines = max(logoLines.count, linesToPrint.count)
+        
+        // DYNAMIC WIDTH: Find the widest line in the ASCII art
+        let maxLogoWidth = logoLines.map { $0.count }.max() ?? 0
         
         print("\n") // Top Margin
         
@@ -174,8 +179,8 @@ class Renderer {
             // Color the logo green
             let coloredLogo = Style.colorize(logoSegment, with: .green)
             
-            // Calculate padding dynamic to logo width (approx 40 chars)
-            let paddingCount = max(0, 45 - logoSegment.count)
+            // Dynamic padding based on the widest art line + 5 spaces buffer
+            let paddingCount = max(0, (maxLogoWidth + 5) - logoSegment.count)
             let padding = String(repeating: " ", count: paddingCount)
             
             print("\(coloredLogo)\(padding)\(infoSegment)")
@@ -186,28 +191,76 @@ class Renderer {
 
 // MARK: - 4. Main Execution
 
-let appleLogo = """
-             ###
-           ####
-          #####
-          ######
-         #######
-        ########  ###
-       #########  ####
-    ###      ##########  #####
-  #####      #####################
- ######      ######################
- #######    ########################
- ##################################
- ##################################
- ##################################
-  ################################
-  ################################
-   ##############################
-    ############################
-      ########################
-        ####################
-"""
+let nightOut = #"""
+|\_____/|     ////\
+|/// \\\|    /// \\\
+ |/O O\|     |/o o\|
+ d  ^ .b     C  )  D    "A Night Out On The Town"
+  \\m//      | \_/ |
+   \_/        \___/
+ __ooo__    _/<|_|>\_
+/_     _\  / |/\_/\| \
+| \_v_/ | |    |\|    |
+|| _/ _/\\| |  |\|  | |
+||)    ( \| |  |\|  | |
+||      \ | \\ |\|  | |
+||  --  |  (())\_/  | |
+((      |   |___|___|_|
+ |______|   |   Y   |))
+  |-||-|    |   |   |
+  | || |    |   |   |
+  | || |    |   |   |
+  | || |    |___|___|prs
+ /u\||/u\   /qp| |qp\
+(_/\||/\_) (___/ \___)
+"""#
+
+let thirtyYearsLater = #"""
+    -(|)-      /\\ \
+   /\|||/\    /     \
+   |-O_O-|    |-o-o-|
+   d  ^  b    C  V  D         "30 Years Later"
+   O\-=-/O    | ___ |
+     \_/       \___/
+   __| |__   _/<|_|>\_
+  /  \_/  \ / |/\_/\| \
+ /  o   o  |    |\|    |
+|/ __o__ \| |   |\|  | |
+|\ o   o /| |   |\|  | |
+||)=====( \ \\  |\|  | |
+|| o   o \ (())\_/__| |
+((   o   |  |   |   |_|
+ | o   o |  |   Y   |))\
+ |   o   |  |   |   | ||
+ | o   o |  |   |   | ||
+ |_______|  |   |   | ||
+prs|_|_|    |___|___| ||
+    /X|X\    /qp| |qp\ ||
+   (__|__)  (___/ \___)||
+"""#
+
+/// Stitches two multiline ASCII art strings side-by-side
+func combineArt(left: String, right: String, gap: Int = 4) -> String {
+    let leftLines = left.components(separatedBy: .newlines)
+    let rightLines = right.components(separatedBy: .newlines)
+    
+    let maxLeftWidth = leftLines.map { $0.count }.max() ?? 0
+    let maxLines = max(leftLines.count, rightLines.count)
+    
+    var combinedLines: [String] = []
+    
+    for i in 0..<maxLines {
+        let l = i < leftLines.count ? leftLines[i] : ""
+        let r = i < rightLines.count ? rightLines[i] : ""
+        
+        let paddingNeeded = maxLeftWidth - l.count + gap
+        let padding = String(repeating: " ", count: max(0, paddingNeeded))
+        
+        combinedLines.append(l + padding + r)
+    }
+    
+    return combinedLines.joined(separator: "\n")
+}
 
 // Configure the fetcher with desired modules
 let systemModules: [SystemModule] = [
@@ -217,6 +270,9 @@ let systemModules: [SystemModule] = [
     HardwareModule()
 ]
 
-// Render the output
-let renderer = Renderer(asciiArt: appleLogo, modules: systemModules)
+// Combine the two scenes with a 5-space gap between them
+let combinedScene = combineArt(left: nightOut, right: thirtyYearsLater, gap: 5)
+
+// Render the output with our dynamically resizing renderer
+let renderer = Renderer(asciiArt: combinedScene, modules: systemModules)
 renderer.draw()

@@ -3,7 +3,7 @@
 # QuirkyTerminal Installation Script
 # This script will install the quirkyterminal tool and configure it to run on terminal startup
 
-echo "🍎 QuirkyTerminal Installation"
+echo "QuirkyTerminal Installation"
 echo "==============================="
 echo ""
 
@@ -11,7 +11,7 @@ echo ""
 mkdir -p ~/.local/bin
 
 # Copy the Swift script
-echo "📦 Installing quirkyterminal..."
+echo "Installing quirkyterminal..."
 cp quirkyterminal.swift ~/.local/bin/quirkyterminal
 chmod +x ~/.local/bin/quirkyterminal
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env swift
 import Foundation
 
+
 // MARK: - 1. Utilities & Configuration
 
 /// Handles ANSI color formatting
@@ -276,3 +277,4 @@ let combinedScene = combineArt(left: nightOut, right: thirtyYearsLater, gap: 5)
 // Render the output with our dynamically resizing renderer
 let renderer = Renderer(asciiArt: combinedScene, modules: systemModules)
 renderer.draw()
+

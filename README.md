@@ -1,4 +1,4 @@
-# QuirkyTerminal 🍎
+# QuirkyTerminal 
 
 A beautiful macOS system information display tool that shows an ASCII Apple logo alongside your system details every time you open Terminal.
 

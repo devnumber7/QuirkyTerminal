@@ -1,6 +1,7 @@
 #!/usr/bin/env swift
 import Foundation
 import IOKit.ps
+import AppKit
 
 // MARK: - 1. Utilities & Configuration
 
@@ -66,6 +67,31 @@ struct NativeStats {
         return String(cString: machine).trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
+ 
+
+    static func getProcessorCoreUsage() -> String {
+    	
+        let totalCores = ProcessInfo.processInfo.processorCount
+		
+    	let activeCores = ProcessInfo.processInfo.activeProcessorCount
+    	return "\(activeCores) \\ \(totalCores)"
+    }
+
+
+   
+    
+    static func getDiskSpace() -> String {
+        let path = NSHomeDirectory()
+        let attrs = try? FileManager.default.attributesOfFileSystem(forPath: path)
+        if let total = attrs?[.systemSize] as? Int64,
+           let free = attrs?[.systemFreeSize] as? Int64 {
+            let usedGB = (total - free) / 1024 / 1024 / 1024
+            let totalGB = total / 1024 / 1024 / 1024
+            return "\(usedGB)GB / \(totalGB)GB"
+        }
+        return "Unknown"
+    }
+    
     static func getMemory() -> String {
         let totalBytes = ProcessInfo.processInfo.physicalMemory
         let totalGB = Double(totalBytes) / 1024.0 / 1024.0 / 1024.0
@@ -92,12 +118,27 @@ struct NativeStats {
 
         @unknown default :
         	return "Unknown idk lmao needs an update"
-        }
-
-      
-        
+        }     
                 
     }
+
+	static func getResolution() -> String {
+	    // We use .main to get the primary monitor
+	    guard let screen = NSScreen.main else {
+	        return "N/A"
+	    }
+	    
+	    // 'deviceDescription' contains the dictionary of hardware specs
+	    let description = screen.deviceDescription
+	    
+	    // We look for the .size key specifically
+	    if let size = description[.size] as? NSSize {
+	        // Screen sizes are floating point, so we convert to Int for a cleaner look
+	        return "\(Int(size.width))x\(Int(size.height))"
+	    }
+	    
+	    return "N/A"
+	}
     
     static func getBattery() -> String {
         // Using IOKit.ps to get hardware battery info cleanly
@@ -152,11 +193,14 @@ struct SoftwareModule: SystemModule {
 
 struct HardwareModule: SystemModule {
     func fetch() -> [InfoItem] {
-        return [
+        return[
             InfoItem(key: "CPU", value: NativeStats.getCPU()),
             InfoItem(key: "Memory", value: NativeStats.getMemory()),
+            InfoItem(key: "Disk Space", value: NativeStats.getDiskSpace()),
             InfoItem(key: "Battery", value: NativeStats.getBattery()),
-            InfoItem(key: "Thermal State", value: NativeStats.getThermalState())
+            InfoItem(key: "Thermal State", value: NativeStats.getThermalState()),
+            InfoItem(key: "Processor Usage", value: NativeStats.getProcessorCoreUsage()),
+   
         ]
     }
 }
@@ -166,8 +210,8 @@ struct EnvironmentModule: SystemModule {
         let env = NativeStats.getEnvironmentInfo()
         return [
             InfoItem(key: "Shell", value: env.shell),
-            InfoItem(key: "Terminal", value: env.terminal)
-        ]
+            InfoItem(key: "Terminal", value: env.terminal),
+            InfoItem(key: "Resolution", value: NativeStats.getResolution())        ]
     }
 }
 

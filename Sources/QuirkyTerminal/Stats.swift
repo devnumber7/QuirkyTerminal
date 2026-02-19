@@ -1,7 +1,10 @@
-#!/usr/bin/env swift
-import Foundation
+import Foundation// MARK: - 2. Native Data Fetchers (The Modular Functions)
 import IOKit.ps
 import AppKit
+
+
+
+
 
 // MARK: - 1. Utilities & Configuration
 
@@ -20,8 +23,6 @@ enum Style: String {
         return "\(color.rawValue)\(text)\(Style.reset.rawValue)"
     }
 }
-
-// MARK: - 2. Native Data Fetchers (The Modular Functions)
 
 /// A collection of pure, native functions to fetch system stats instantly.
 struct NativeStats {
@@ -74,7 +75,7 @@ struct NativeStats {
         let totalCores = ProcessInfo.processInfo.processorCount
 		
     	let activeCores = ProcessInfo.processInfo.activeProcessorCount
-    	return "\(activeCores) \\ \(totalCores)"
+    	return "\(activeCores) / \(totalCores)"
     }
 
 
@@ -155,6 +156,21 @@ struct NativeStats {
         }
         return "N/A (Desktop?)"
     }
+
+
+    static func getLastBoot() -> String {
+        var tv = timeval()
+        var size = MemoryLayout<timeval>.size
+        sysctlbyname("kern.boottime", &tv, &size, nil, 0)
+        let bootDate = Date(timeIntervalSince1970: TimeInterval(tv.tv_sec))
+        let formatter = RelativeDateTimeFormatter()
+        return "Booted " + formatter.localizedString(for: bootDate, relativeTo: Date())
+    }
+    
+    static func getLowPowerMode() -> String {
+        let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+        return isLowPower ? "Saving Energy 🔋" : "Full Send ⚡️"
+    }
     
     static func getEnvironmentInfo() -> (shell: String, terminal: String) {
         let env = ProcessInfo.processInfo.environment
@@ -186,7 +202,8 @@ struct SoftwareModule: SystemModule {
         return [
             InfoItem(key: "OS", value: NativeStats.getOSVersion()),
             InfoItem(key: "Kernel", value: NativeStats.getKernel()),
-            InfoItem(key: "Uptime", value: NativeStats.getUptime())
+            InfoItem(key: "Uptime", value: NativeStats.getUptime()),
+            InfoItem(key: "Last Boot", value: NativeStats.getLastBoot())
         ]
     }
 }
@@ -198,6 +215,7 @@ struct HardwareModule: SystemModule {
             InfoItem(key: "Memory", value: NativeStats.getMemory()),
             InfoItem(key: "Disk Space", value: NativeStats.getDiskSpace()),
             InfoItem(key: "Battery", value: NativeStats.getBattery()),
+            InfoItem(key: "Low Power Mode", value: NativeStats.getLowPowerMode()),
             InfoItem(key: "Thermal State", value: NativeStats.getThermalState()),
             InfoItem(key: "Processor Usage", value: NativeStats.getProcessorCoreUsage()),
    
@@ -267,82 +285,3 @@ final class Renderer {
         print("\n")
     }
 }
-
-// MARK: - 5. Main Execution
-
-let nightOut = #"""
-|\_____/|     ////\
-|/// \\\|    /// \\\
- |/O O\|     |/o o\|
- d  ^ .b     C  )  D    "A Night Out On The Town"
-  \\m//      | \_/ |
-   \_/        \___/
- __ooo__    _/<|_|>\_
-/_     _\  / |/\_/\| \
-| \_v_/ | |    |\|    |
-|| _/ _/\\| |  |\|  | |
-||)    ( \| |  |\|  | |
-||      \ | \\ |\|  | |
-||  --  |  (())\_/  | |
-((      |   |___|___|_|
- |______|   |   Y   |))
-  |-||-|    |   |   |
-  | || |    |   |   |
-  | || |    |   |   |
-  | || |    |___|___|prs
- /u\||/u\   /qp| |qp\
-(_/\||/\_) (___/ \___)
-"""#
-
-let thirtyYearsLater = #"""
-    -(|)-      /\\ \
-   /\|||/\    /     \
-   |-O_O-|    |-o-o-|
-   d  ^  b    C  V  D        "30 Years Later"
-   O\-=-/O    | ___ |
-     \_/       \___/
-   __| |__   _/<|_|>\_
-  /  \_/  \ / |/\_/\| \
- /  o   o  |    |\|    |
-|/ __o__ \| |   |\|  | |
-|\ o   o /| |   |\|  | |
-||)=====( \ \\  |\|  | |
-|| o   o \ (())\_/__| |
-((   o   |  |   |   |_|
- | o   o |  |   Y   |))\
- |   o   |  |   |   | ||
- | o   o |  |   |   | ||
- |_______|  |   |   | ||
-prs|_|_|    |___|___| ||
-    /X|X\    /qp| |qp\ ||
-   (__|__)  (___/ \___)||
-"""#
-
-func combineArt(left: String, right: String, gap: Int = 4) -> String {
-    let leftLines = left.components(separatedBy: .newlines)
-    let rightLines = right.components(separatedBy: .newlines)
-    let maxLeftWidth = leftLines.map { $0.count }.max() ?? 0
-    let maxLines = max(leftLines.count, rightLines.count)
-    var combinedLines: [String] = []
-    
-    for i in 0..<maxLines {
-        let l = i < leftLines.count ? leftLines[i] : ""
-        let r = i < rightLines.count ? rightLines[i] : ""
-        let paddingNeeded = maxLeftWidth - l.count + gap
-        let padding = String(repeating: " ", count: max(0, paddingNeeded))
-        combinedLines.append(l + padding + r)
-    }
-    return combinedLines.joined(separator: "\n")
-}
-
-let systemModules: [SystemModule] = [
-  
-    UserHostModule(),
-   	EnvironmentModule(),
-    SoftwareModule(),
-    HardwareModule() // Now includes Battery!
-]
-
-let combinedScene = combineArt(left: nightOut, right: thirtyYearsLater, gap: 5)
-let renderer = Renderer(asciiArt: combinedScene, modules: systemModules)
-renderer.draw()

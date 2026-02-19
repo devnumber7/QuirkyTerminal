@@ -1,89 +1,62 @@
-# QuirkyTerminal 
+# QuirkyTerminal
 
-A beautiful macOS system information display tool that shows an ASCII Apple logo alongside your system details every time you open Terminal.
+A high-performance, system-fetch tool for macOS built with Swift. It gives you a snapshot of your system stats alongside some retro ASCII art.
 
+## Features
 
-## Installation
+**Native & Fast:** Compiled machine code ensures your stats appear instantly when you open a tab.
 
-### Quick Install
+**Modular Architecture:** Easily add new stats in `Stats.swift` or new art in `Art.swift`.
 
-1. Download or clone these files to your Mac
-2. Open Terminal and navigate to the folder containing the files
-3. Run the installation script:
+**macOS Deep-Dive:** Pulls real-time battery health, thermal states, and Apple Silicon core counts using native APIs.
 
+## Getting Started
+
+### 1. Prerequisites
+
+A Mac (obviously).
+
+Xcode Command Line Tools: Required for the Swift compiler.
 ```bash
-chmod +x install.sh
-./install.sh
+xcode-select --install
 ```
 
-4. Open a new Terminal window to see MacFetch in action!
+### 2. Installation
 
-### Manual Installation
-
-1. Copy `quirkyterminal.swift` to `~/.local/bin/quirkyterminal`
-2. Make it executable:
-   ```bash
-   chmod +x ~/.local/bin/quirkyterminal
-   ```
-3. Add to your shell configuration file:
-   - For **zsh** (default on macOS): Add to `~/.zshrc`
-   - For **bash**: Add to `~/.bash_profile` or `~/.bashrc`
-   
-   Add this line:
-   ```bash
-   ~/.local/bin/quirkyterminal
-   ```
-
-## Usage
-
-QuirkyTerminal will automatically run every time you open a new Terminal window.
-
-To run it manually at any time:
+Clone this repository and build the production-ready binary:
 ```bash
+git clone https://github.com/your-username/QuirkyTerminal.git
+cd QuirkyTerminal
+
+# Build the release version
+swift build -c release
+
+# Move it to your local bin
+mkdir -p ~/.local/bin
+cp .build/release/QuirkyTerminal ~/.local/bin/quirkyterminal
+```
+
+### 3. Run on Startup
+
+To see the art and stats every time you open a new terminal tab, add the following line to the end of your `~/.zshrc` (or `~/.bash_profile`):
+```bash
+# Run the quirky fetch tool
 ~/.local/bin/quirkyterminal
 ```
 
-## Customization
+## Development
 
-You can edit `~/.local/bin/quirkyterminal` to customize:
-- Colors (modify the `Colors` struct)
-- Which information is displayed
-- The ASCII logo design
-- Layout and formatting
+This project uses the Swift Package Manager. To make changes:
 
-## Requirements
+**Edit Art:** Modify `Sources/QuirkyTerminal/Art.swift` to add your own ASCII scenes.
 
-- macOS (tested on macOS 10.15+)
-- Swift (comes pre-installed on macOS)
+**Edit Stats:** Add new fetchers to `Sources/QuirkyTerminal/Stats.swift` using Foundation or IOKit.
 
-## Uninstallation
-
-To remove QuirkyTerminal:
-
-1. Delete the executable:
-   ```bash
-   rm ~/.local/bin/quirkyterminal
-   ```
-
-2. Remove the line from your shell configuration file:
-   - Edit `~/.zshrc` or `~/.bash_profile`
-   - Remove the line: `~/.local/bin/quirkyterminal`
-
-## Troubleshooting
-
-
-**Permission denied error:**
+**Run in Dev Mode:**
 ```bash
-chmod +x ~/.local/bin/quirkyterminal
+swift run
 ```
-
-**Swift not found:**
-- Swift comes with Xcode Command Line Tools. Install with:
-  ```bash
-  xcode-select --install
-  ```
 
 ## Credits
 
-Inspired by neofetch and similar system information tools.
-
+Inspired by [neofetch](https://github.com/dylanaraps/neofetch) and similar system information tools.

@@ -25,7 +25,7 @@ xcode-select --install
 
 Clone this repository and build the production-ready binary:
 ```bash
-git clone https://github.com/your-username/QuirkyTerminal.git
+git clone https://github.com/devnumber7/QuirkyTerminal.git
 cd QuirkyTerminal
 
 # Build the release version

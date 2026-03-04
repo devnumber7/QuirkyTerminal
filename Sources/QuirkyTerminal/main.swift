@@ -1,7 +1,7 @@
 import Foundation
 
 /// QuirkyTerminal provides an entry point to render the ASCII art + system modules
-/// without using top-level executable statements (which are disallowed in most targets).
+/// without using top-level executable statements 
 ///
 /// Call `QuirkyTerminal.run()` from your app's entry point or wherever appropriate.
 public enum QuirkyTerminal {

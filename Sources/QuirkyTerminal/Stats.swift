@@ -1,7 +1,7 @@
-import Foundation// MARK: - 2. Native Data Fetchers (The Modular Functions)
+import Foundation
 import IOKit.ps
 import AppKit
-
+import CoreAudio
 
 
 
@@ -26,6 +26,7 @@ enum Style: String {
 
 /// A collection of pure, native functions to fetch system stats instantly.
 struct NativeStats {
+    
     
     static func getUserAndHost() -> String {
         let user = NSUserName()
@@ -77,6 +78,8 @@ struct NativeStats {
     	let activeCores = ProcessInfo.processInfo.activeProcessorCount
     	return "\(activeCores) / \(totalCores)"
     }
+    
+    
 
 
    
@@ -178,6 +181,69 @@ struct NativeStats {
         let term = env["TERM_PROGRAM"] ?? env["TERM"] ?? "Unknown"
         return (shell, term)
     }
+    
+    static func getAudioOutput() -> String {
+        var defaultDeviceID = AudioDeviceID(0)
+        var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        let systemObjectID = AudioObjectID(kAudioObjectSystemObject)
+        let status = AudioObjectGetPropertyData(systemObjectID, &address, 0, nil, &propertySize, &defaultDeviceID)
+        guard status == noErr, defaultDeviceID != 0 else {
+            return "N/A"
+        }
+
+      
+        var deviceName: CFString? = nil
+        var nameSize = UInt32(MemoryLayout<CFString?>.size)
+        var nameAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        let status2: OSStatus = withUnsafeMutablePointer(to: &deviceName) { ptr in
+            let rawPtr = UnsafeMutableRawPointer(ptr)
+            return AudioObjectGetPropertyData(defaultDeviceID, &nameAddress, 0, nil, &nameSize, rawPtr)
+        }
+
+        if status2 == noErr, let deviceName = deviceName {
+            return deviceName as String
+        } else {
+            return "Device \(defaultDeviceID)"
+        }
+    }
+
+    static func getLocalIP() -> String {
+        var address: String?
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        
+        if getifaddrs(&ifaddr) == 0 {
+            var ptr = ifaddr
+            while ptr != nil {
+                defer { ptr = ptr?.pointee.ifa_next }
+                let interface = ptr?.pointee
+                let addrFamily = interface?.ifa_addr.pointee.sa_family
+                
+                if addrFamily == UInt8(AF_INET) {
+                    let name = String(cString: (interface?.ifa_name)!)
+                    if name == "en0" { // en0 is usually Wi-Fi
+                        var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+                        getnameinfo(interface?.ifa_addr, socklen_t((interface?.ifa_addr.pointee.sa_len)!), &hostname, socklen_t(hostname.count), nil, socklen_t(0), NI_NUMERICHOST)
+                        address = String(cString: hostname)
+                    }
+                }
+            }
+            freeifaddrs(ifaddr)
+        }
+        return address ?? "Disconnected"
+    }
+    
+    
 }
 
 // MARK: - 3. Module Adapters
@@ -193,7 +259,15 @@ protocol SystemModule {
 
 struct UserHostModule: SystemModule {
     func fetch() -> [InfoItem] {
-        return [InfoItem(key: "Header", value: Style.colorize(NativeStats.getUserAndHost(), with: .green))]
+        let userHost = NativeStats.getUserAndHost()
+    
+        
+       
+        let headerValue = "\(userHost)"
+        
+        return [
+            InfoItem(key: "Header", value: Style.colorize(headerValue, with: .green))
+        ]
     }
 }
 
@@ -203,7 +277,8 @@ struct SoftwareModule: SystemModule {
             InfoItem(key: "OS", value: NativeStats.getOSVersion()),
             InfoItem(key: "Kernel", value: NativeStats.getKernel()),
             InfoItem(key: "Uptime", value: NativeStats.getUptime()),
-            InfoItem(key: "Last Boot", value: NativeStats.getLastBoot())
+            InfoItem(key: "Last Boot", value: NativeStats.getLastBoot()),
+            InfoItem(key: "IP Address", value: NativeStats.getLocalIP())
         ]
     }
 }
@@ -218,6 +293,7 @@ struct HardwareModule: SystemModule {
             InfoItem(key: "Low Power Mode", value: NativeStats.getLowPowerMode()),
             InfoItem(key: "Thermal State", value: NativeStats.getThermalState()),
             InfoItem(key: "Processor Usage", value: NativeStats.getProcessorCoreUsage()),
+            InfoItem(key: "Audio Output", value: NativeStats.getAudioOutput())
    
         ]
     }
@@ -285,3 +361,4 @@ final class Renderer {
         print("\n")
     }
 }
+
